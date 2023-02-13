@@ -4,9 +4,21 @@ C++ implementation of compile time evaluated strings.
 This library provides basic compile time strings as well as features for `fmt` and `std::string_view`.
 
 ## Usage
-The library can be included into your existing CMake project by adding the following lines to your `CMakeLists.txt`:
+The library can be included into your existing CMake project by using `git submodules` and adding the following lines to your `CMakeLists.txt`:
 ```CMake
 add_subdirectory(string_constant)
+target_link_libraries(${target_name} string_constant::string_constant)
+```
+
+If you are **not** using `git submodules` and want to use the fetch content feature of CMake, just add the following lines to your `CMakeLists.txt`:
+```CMake
+include(FetchContent)
+FetchContent_Declare(
+    string_constant
+    GIT_REPOSITORY git@github.com:dominicpoeschko/string_constant.git
+    GIT_TAG master
+)
+FetchContent_MakeAvailable(string_constant)
 target_link_libraries(${target_name} string_constant::string_constant)
 ```
 

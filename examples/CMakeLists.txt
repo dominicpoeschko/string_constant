@@ -8,5 +8,11 @@ find_package(fmt)
 
 include_directories(../src)
 
-add_executable(constant_string constant_string.cpp)
-target_link_libraries(constant_string fmt::fmt-header-only)
+add_executable(basic basic_usage.cpp)
+target_link_libraries(basic fmt::fmt-header-only)
+
+add_executable(compileTime compile_time_fmt.cpp)
+target_link_libraries(compileTime fmt::fmt-header-only)
+
+add_executable(stringView string_view.cpp)
+target_link_libraries(stringView fmt::fmt-header-only)
