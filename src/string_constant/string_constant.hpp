@@ -13,6 +13,7 @@
         #pragma clang diagnostic ignored "-Wweak-vtables"
         #pragma clang diagnostic ignored "-Wextra-semi"
         #pragma clang diagnostic ignored "-Wmissing-noreturn"
+        #pragma clang diagnostic ignored "-Wduplicate-enum"
     #endif
     #include <fmt/compile.h>
     #include <fmt/format.h>
