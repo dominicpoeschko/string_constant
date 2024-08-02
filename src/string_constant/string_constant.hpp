@@ -200,7 +200,7 @@ namespace detail {
     template<auto... args, char... formatChars>
     consteval auto format(StringConstant<formatChars...>) {
         constexpr auto Generator = []() {
-            std::array<char, 1 << 30> storage;
+            std::array<char, 1 << 20> storage;
             auto const                end = fmt::format_to(
               storage.data(),
               FMT_COMPILE(std::string_view{StringConstant<formatChars...>{}}),
@@ -214,7 +214,7 @@ namespace detail {
     template<typename Args, char... formatChars>
     consteval auto format(StringConstant<formatChars...>) {
         constexpr auto Generator = []() {
-            std::array<char, 1 << 30> storage;
+            std::array<char, 1 << 20> storage;
             auto                      call = [&](auto... args) {
                 return fmt::format_to(
                   storage.data(),
