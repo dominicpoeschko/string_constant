@@ -14,6 +14,7 @@
         #pragma clang diagnostic ignored "-Wextra-semi"
         #pragma clang diagnostic ignored "-Wmissing-noreturn"
         #pragma clang diagnostic ignored "-Wduplicate-enum"
+        #pragma clang diagnostic ignored "-Wsign-conversion"
     #endif
     #include <fmt/compile.h>
     #include <fmt/format.h>
@@ -93,7 +94,7 @@ namespace detail {
         }()};
 
         static consteval auto sc() {
-            return create([]() { return std::string_view{storage.begin(), storage.size()}; });
+            return create([]() { return std::string_view{storage.begin(), storage.end()}; });
         }
     };
 }   // namespace detail
