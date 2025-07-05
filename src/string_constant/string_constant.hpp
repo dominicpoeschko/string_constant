@@ -15,6 +15,7 @@
         #pragma clang diagnostic ignored "-Wmissing-noreturn"
         #pragma clang diagnostic ignored "-Wduplicate-enum"
         #pragma clang diagnostic ignored "-Wsign-conversion"
+        #pragma clang diagnostic ignored "-Wshorten-64-to-32"
     #endif
     #include <fmt/compile.h>
     #include <fmt/format.h>
@@ -29,6 +30,7 @@ template<char... chars>
 struct StringConstant {
     static constexpr std::array<char, sizeof...(chars)> storage{chars...};
     static constexpr std::string_view                   sv{storage.data(), storage.size()};
+
     constexpr operator std::string_view() const { return sv; }
 };
 
@@ -40,7 +42,8 @@ namespace literals {
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wpedantic"
 #endif
-    template<typename CharT, CharT... chars>
+    template<typename CharT,
+             CharT... chars>
     consteval StringConstant<chars...> operator""_sc() {
         return {};
     }
@@ -52,28 +55,29 @@ namespace literals {
 }   // namespace literals
 
 namespace detail {
-    template<typename StringViewGenerator, std::size_t... Indices>
-        requires(std::convertible_to<
-                 std::remove_cvref_t<decltype(StringViewGenerator{}())>,
-                 std::string_view>)
+    template<typename StringViewGenerator,
+             std::size_t... Indices>
+        requires(std::convertible_to<std::remove_cvref_t<decltype(StringViewGenerator{}())>,
+                                     std::string_view>)
     consteval auto unpack_into(std::index_sequence<Indices...>)
       -> StringConstant<StringViewGenerator{}()[Indices]...> {
         return {};
     }
 
-    template<typename StringViewGenerator, std::size_t... Indices>
-    consteval auto unpack_into(StringViewGenerator x, std::index_sequence<Indices...>) {
+    template<typename StringViewGenerator,
+             std::size_t... Indices>
+    consteval auto unpack_into(StringViewGenerator x,
+                               std::index_sequence<Indices...>) {
         return StringConstant<x()[Indices]...>{};
     }
 
 }   // namespace detail
 
 template<typename StringViewLikeGenerator>
-    requires(std::convertible_to<
-               std::remove_cvref_t<decltype(StringViewLikeGenerator{}())>,
-               std::string_view>
-             && !std::
-                  same_as<std::remove_cvref_t<decltype(StringViewLikeGenerator{}())>, std::string>)
+    requires(std::convertible_to<std::remove_cvref_t<decltype(StringViewLikeGenerator{}())>,
+                                 std::string_view>
+             && !std::same_as<std::remove_cvref_t<decltype(StringViewLikeGenerator{}())>,
+                              std::string>)
 consteval auto create(StringViewLikeGenerator)
   -> decltype(detail::unpack_into<StringViewLikeGenerator>(
     std::make_index_sequence<StringViewLikeGenerator{}().size()>{})) {
@@ -100,38 +104,47 @@ namespace detail {
 }   // namespace detail
 
 template<typename StringGenerator>
-    requires(std::same_as<std::remove_cvref_t<decltype(StringGenerator{}())>, std::string>)
+    requires(std::same_as<std::remove_cvref_t<decltype(StringGenerator{}())>,
+                          std::string>)
 consteval auto create(StringGenerator) {
     return detail::FromStringGenerator<StringGenerator>::sc();
 }
 
-template<typename Stream, char... chars>
-constexpr Stream& operator<<(Stream& os, StringConstant<chars...> const&) {
+template<typename Stream,
+         char... chars>
+constexpr Stream& operator<<(Stream& os,
+                             StringConstant<chars...> const&) {
     os << StringConstant<chars...>::sv;
     return os;
 }
 
-template<char... chars_lhs, char... chars_rhs>
-consteval auto operator+(StringConstant<chars_lhs...>, StringConstant<chars_rhs...>)
-  -> StringConstant<chars_lhs..., chars_rhs...> {
+template<char... chars_lhs,
+         char... chars_rhs>
+consteval auto operator+(StringConstant<chars_lhs...>,
+                         StringConstant<chars_rhs...>) -> StringConstant<chars_lhs...,
+                                                                         chars_rhs...> {
     return {};
 }
 
-template<char... chars_lhs, char... chars_rhs>
-consteval auto operator==(StringConstant<chars_lhs...> const&, StringConstant<chars_rhs...> const&)
-  -> bool {
+template<char... chars_lhs,
+         char... chars_rhs>
+consteval auto operator==(StringConstant<chars_lhs...> const&,
+                          StringConstant<chars_rhs...> const&) -> bool {
     return false;
 }
 
 template<char... chars>
-consteval auto operator==(StringConstant<chars...> const&, StringConstant<chars...> const&)
-  -> bool {
+consteval auto operator==(StringConstant<chars...> const&,
+                          StringConstant<chars...> const&) -> bool {
     return true;
 }
 
-template<char... chars_lhs, typename StringViewLike>
-constexpr auto operator==(StringConstant<chars_lhs...> const&, StringViewLike const& rhs_in) -> bool
-    requires(std::convertible_to<decltype(rhs_in), std::string_view>)
+template<char... chars_lhs,
+         typename StringViewLike>
+constexpr auto operator==(StringConstant<chars_lhs...> const&,
+                          StringViewLike const& rhs_in) -> bool
+    requires(std::convertible_to<decltype(rhs_in),
+                                 std::string_view>)
 {
     constexpr std::string_view lhs{StringConstant<chars_lhs...>{}};
     std::string_view const     rhs{rhs_in};
@@ -139,9 +152,10 @@ constexpr auto operator==(StringConstant<chars_lhs...> const&, StringViewLike co
     return rhs == lhs;
 }
 
-template<char... chars_lhs, char... chars_rhs>
-consteval auto operator<=>(StringConstant<chars_lhs...> const&, StringConstant<chars_rhs...> const&)
-  -> std::strong_ordering {
+template<char... chars_lhs,
+         char... chars_rhs>
+consteval auto operator<=>(StringConstant<chars_lhs...> const&,
+                           StringConstant<chars_rhs...> const&) -> std::strong_ordering {
     constexpr std::string_view lhs{StringConstant<chars_lhs...>{}};
     constexpr std::string_view rhs{StringConstant<chars_rhs...>{}};
 #if 0
@@ -151,9 +165,12 @@ return lhs <=> rhs;
 #endif
 }
 
-template<char... chars_lhs, typename StringViewLike>
-constexpr auto operator<=>(StringConstant<chars_lhs...>, StringViewLike const& rhs_in)
-    requires(std::convertible_to<decltype(rhs_in), std::string_view>)
+template<char... chars_lhs,
+         typename StringViewLike>
+constexpr auto operator<=>(StringConstant<chars_lhs...>,
+                           StringViewLike const& rhs_in)
+    requires(std::convertible_to<decltype(rhs_in),
+                                 std::string_view>)
 {
     constexpr std::string_view lhs{StringConstant<chars_lhs...>{}};
     std::string_view const     rhs{rhs_in};
@@ -164,8 +181,12 @@ return lhs <=> rhs
 #endif
 }
 
-template<typename ShouldEscape, typename EscapeWith, char... chars>
-consteval auto escape(StringConstant<chars...>, ShouldEscape, EscapeWith) {
+template<typename ShouldEscape,
+         typename EscapeWith,
+         char... chars>
+consteval auto escape(StringConstant<chars...>,
+                      ShouldEscape,
+                      EscapeWith) {
     constexpr auto Generator = []() {
         std::string s{StringConstant<chars...>::sv};
 
@@ -189,30 +210,32 @@ consteval auto escape(StringConstant<chars...>, ShouldEscape, EscapeWith) {
 template<char... chars>
 struct fmt::formatter<sc::StringConstant<chars...>> : formatter<string_view> {
     template<typename FormatContext>
-    constexpr auto format(sc::StringConstant<chars...>, FormatContext& ctx) const {
-        return formatter<string_view>::format(
-          std::string_view{sc::StringConstant<chars...>{}},
-          ctx);
+    constexpr auto format(sc::StringConstant<chars...>,
+                          FormatContext& ctx) const {
+        return formatter<string_view>::format(std::string_view{sc::StringConstant<chars...>{}},
+                                              ctx);
     }
 };
 
 namespace sc {
 namespace detail {
-    template<auto... args, char... formatChars>
+    template<auto... args,
+             char... formatChars>
     consteval auto format(StringConstant<formatChars...>) {
         constexpr auto Generator = []() {
             std::array<char, 1 << 20> storage;
-            auto const                end = fmt::format_to(
-              storage.data(),
-              FMT_COMPILE(std::string_view{StringConstant<formatChars...>{}}),
-              args...);
+            auto const                end
+              = fmt::format_to(storage.data(),
+                               FMT_COMPILE(std::string_view{StringConstant<formatChars...>{}}),
+                               args...);
             return std::string{storage.data(), end};
         };
 
         return create(Generator);
     }
 
-    template<typename Args, char... formatChars>
+    template<typename Args,
+             char... formatChars>
     consteval auto format(StringConstant<formatChars...>) {
         constexpr auto Generator = []() {
             std::array<char, 1 << 20> storage;
@@ -243,12 +266,13 @@ consteval auto make_arg(ArgGenerator) -> ArgHolder<ArgGenerator> {
 template<typename ArgGenerator>
 struct fmt::formatter<sc::ArgHolder<ArgGenerator>> : formatter<decltype(ArgGenerator{}())> {
     template<typename FormatContext>
-    constexpr auto format(sc::ArgHolder<ArgGenerator>, FormatContext& ctx) const {
+    constexpr auto format(sc::ArgHolder<ArgGenerator>,
+                          FormatContext& ctx) const {
         return formatter<decltype(ArgGenerator{}())>::format(ArgGenerator{}(), ctx);
     }
 };
 #endif
 
 #define SC_LIFT(arg) ::sc::create([]() { return std::string_view{arg}; })
-#define SC_FORMAT(fmt, ...) \
+#define SC_FORMAT(fmt, ...)                                                                     \
     ::sc::detail::format<decltype([]() { return std::make_tuple(__VA_ARGS__); })>(SC_LIFT(fmt))
