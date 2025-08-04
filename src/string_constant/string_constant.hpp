@@ -17,9 +17,23 @@
         #pragma clang diagnostic ignored "-Wsign-conversion"
         #pragma clang diagnostic ignored "-Wshorten-64-to-32"
     #endif
+    #ifndef FMT_USE_LOCALE
+        #define FMT_USE_LOCALE 0
+    #endif
+    #ifndef FMT_UNICODE
+        #define FMT_UNICODE 0
+    #endif
+    #ifdef FMT_HEADER_ONLY
+        #define SC_RE_ENABLE_HEADER_ONLY
+        #undef FMT_HEADER_ONLY
+    #endif
     #include <fmt/compile.h>
     #include <fmt/format.h>
     #include <fmt/ranges.h>
+    #ifdef SC_RE_ENABLE_HEADER_ONLY
+        #define FMT_HEADER_ONLY
+        #undef SC_RE_ENABLE_HEADER_ONLY
+    #endif
     #ifdef __clang__
         #pragma clang diagnostic pop
     #endif
