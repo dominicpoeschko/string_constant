@@ -48,6 +48,8 @@ struct StringConstant {
     constexpr operator std::string_view() const { return sv; }
 };
 
+StringConstant() -> StringConstant<>;
+
 namespace literals {
 #ifdef __clang__
     #pragma clang diagnostic push
