@@ -43,9 +43,9 @@ namespace sc {
 template<char... chars>
 struct StringConstant {
     static constexpr std::array<char, sizeof...(chars)> storage{chars...};
-    static constexpr std::string_view                   sv{storage.data(), storage.size()};
+    static constexpr std::string_view                   stringView{storage.data(), storage.size()};
 
-    constexpr operator std::string_view() const { return sv; }
+    constexpr operator std::string_view() const { return stringView; }
 };
 
 StringConstant() -> StringConstant<>;
@@ -82,9 +82,9 @@ namespace detail {
 
     template<typename StringViewGenerator,
              std::size_t... Indices>
-    consteval auto unpack_into(StringViewGenerator x,
+    consteval auto unpack_into(StringViewGenerator generator,
                                std::index_sequence<Indices...>) {
-        return StringConstant<x()[Indices]...>{};
+        return StringConstant<generator()[Indices]...>{};
     }
 
 }   // namespace detail
@@ -128,10 +128,10 @@ consteval auto create(StringGenerator) {
 
 template<typename Stream,
          char... chars>
-constexpr Stream& operator<<(Stream& os,
+constexpr Stream& operator<<(Stream& outputStream,
                              StringConstant<chars...> const&) {
-    os << StringConstant<chars...>::sv;
-    return os;
+    outputStream << StringConstant<chars...>::stringView;
+    return outputStream;
 }
 
 template<char... chars_lhs,
@@ -158,12 +158,12 @@ consteval auto operator==(StringConstant<chars...> const&,
 template<char... chars_lhs,
          typename StringViewLike>
 constexpr auto operator==(StringConstant<chars_lhs...> const&,
-                          StringViewLike const& rhs_in) -> bool
-    requires(std::convertible_to<decltype(rhs_in),
+                          StringViewLike const& rightHandSide) -> bool
+    requires(std::convertible_to<decltype(rightHandSide),
                                  std::string_view>)
 {
     constexpr std::string_view lhs{StringConstant<chars_lhs...>{}};
-    std::string_view const     rhs{rhs_in};
+    std::string_view const     rhs{rightHandSide};
 
     return rhs == lhs;
 }
@@ -174,27 +174,19 @@ consteval auto operator<=>(StringConstant<chars_lhs...> const&,
                            StringConstant<chars_rhs...> const&) -> std::strong_ordering {
     constexpr std::string_view lhs{StringConstant<chars_lhs...>{}};
     constexpr std::string_view rhs{StringConstant<chars_rhs...>{}};
-#if 0
-return lhs <=> rhs;
-#else
     return static_cast<std::strong_ordering>(lhs.compare(rhs) <=> 0);
-#endif
 }
 
 template<char... chars_lhs,
          typename StringViewLike>
 constexpr auto operator<=>(StringConstant<chars_lhs...>,
-                           StringViewLike const& rhs_in)
-    requires(std::convertible_to<decltype(rhs_in),
+                           StringViewLike const& rightHandSide)
+    requires(std::convertible_to<decltype(rightHandSide),
                                  std::string_view>)
 {
     constexpr std::string_view lhs{StringConstant<chars_lhs...>{}};
-    std::string_view const     rhs{rhs_in};
-#if 0
-return lhs <=> rhs
-#else
+    std::string_view const     rhs{rightHandSide};
     return static_cast<std::strong_ordering>(lhs.compare(rhs) <=> 0);
-#endif
 }
 
 template<typename ShouldEscape,
@@ -204,17 +196,17 @@ consteval auto escape(StringConstant<chars...>,
                       ShouldEscape,
                       EscapeWith) {
     constexpr auto Generator = []() {
-        std::string s{StringConstant<chars...>::sv};
+        std::string string{StringConstant<chars...>::stringView};
 
-        auto pos = s.begin();
-        while(pos != s.end()) {
-            pos = std::find_if(pos, s.end(), ShouldEscape{});
+        auto pos = string.begin();
+        while(pos != string.end()) {
+            pos = std::find_if(pos, string.end(), ShouldEscape{});
 
-            if(pos != s.end()) {
-                pos = std::next(s.insert(std::next(pos), EscapeWith{}(*pos)));
+            if(pos != string.end()) {
+                pos = std::next(string.insert(std::next(pos), EscapeWith{}(*pos)));
             }
         }
-        return s;
+        return string;
     };
 
     return create(Generator);
@@ -239,8 +231,8 @@ namespace detail {
              char... formatChars>
     consteval auto format(StringConstant<formatChars...>) {
         constexpr auto Generator = []() {
-            std::array<char, 1 << 20> storage;
-            auto const                end
+            std::array<char, 1U << 20U> storage{};
+            auto const                  end
               = fmt::format_to(storage.data(),
                                FMT_COMPILE(std::string_view{StringConstant<formatChars...>{}}),
                                args...);
@@ -254,8 +246,8 @@ namespace detail {
              char... formatChars>
     consteval auto format(StringConstant<formatChars...>) {
         constexpr auto Generator = []() {
-            std::array<char, 1 << 20> storage;
-            auto                      call = [&](auto... args) {
+            std::array<char, 1U << 20U> storage{};
+            auto                        call = [&](auto... args) {
                 return fmt::format_to(
                   storage.data(),
                   FMT_COMPILE(std::string_view{StringConstant<formatChars...>{}}),
