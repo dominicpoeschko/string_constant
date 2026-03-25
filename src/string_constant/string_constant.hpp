@@ -230,12 +230,17 @@ namespace detail {
     template<auto... args,
              char... formatChars>
     consteval auto format(StringConstant<formatChars...>) {
+        struct FormatStr : fmt::compiled_string {
+            using char_type = char;
+
+            constexpr explicit operator fmt::basic_string_view<char>() const noexcept {
+                return StringConstant<formatChars...>::stringView;
+            }
+        };
+
         constexpr auto Generator = []() {
             std::array<char, 1U << 20U> storage{};
-            auto const                  end
-              = fmt::format_to(storage.data(),
-                               FMT_COMPILE(std::string_view{StringConstant<formatChars...>{}}),
-                               args...);
+            auto const                  end = fmt::format_to(storage.data(), FormatStr{}, args...);
             return std::string{storage.data(), end};
         };
 
@@ -245,14 +250,18 @@ namespace detail {
     template<typename Args,
              char... formatChars>
     consteval auto format(StringConstant<formatChars...>) {
+        struct FormatStr : fmt::compiled_string {
+            using char_type = char;
+
+            constexpr explicit operator fmt::basic_string_view<char>() const noexcept {
+                return StringConstant<formatChars...>::stringView;
+            }
+        };
+
         constexpr auto Generator = []() {
             std::array<char, 1U << 20U> storage{};
-            auto                        call = [&](auto... args) {
-                return fmt::format_to(
-                  storage.data(),
-                  FMT_COMPILE(std::string_view{StringConstant<formatChars...>{}}),
-                  args...);
-            };
+            auto                        call
+              = [&](auto... args) { return fmt::format_to(storage.data(), FormatStr{}, args...); };
             auto const end = std::apply(call, Args{}());
             return std::string{storage.data(), end};
         };
