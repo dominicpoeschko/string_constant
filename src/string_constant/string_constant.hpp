@@ -12,10 +12,19 @@
         #pragma clang diagnostic ignored "-Wundefined-func-template"
         #pragma clang diagnostic ignored "-Wweak-vtables"
         #pragma clang diagnostic ignored "-Wextra-semi"
+        #pragma clang diagnostic ignored "-Wextra-semi-stmt"
         #pragma clang diagnostic ignored "-Wmissing-noreturn"
         #pragma clang diagnostic ignored "-Wduplicate-enum"
         #pragma clang diagnostic ignored "-Wsign-conversion"
         #pragma clang diagnostic ignored "-Wshorten-64-to-32"
+        #pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
+        #pragma clang diagnostic ignored "-Wswitch-enum"
+        #pragma clang diagnostic ignored "-Wswitch-default"
+        #pragma clang diagnostic ignored "-Wfloat-equal"
+        #pragma clang diagnostic ignored "-Wreserved-macro-identifier"
+        #pragma clang diagnostic ignored "-Wglobal-constructors"
+        #pragma clang diagnostic ignored "-Wdocumentation"
+        #pragma clang diagnostic ignored "-Wdocumentation-unknown-command"
     #endif
     #ifndef FMT_USE_LOCALE
         #define FMT_USE_LOCALE 0
@@ -231,7 +240,7 @@ namespace detail {
              char... formatChars>
     consteval auto format(StringConstant<formatChars...>) {
         struct FormatStr : fmt::compiled_string {
-            using char_type = char;
+            using char_type [[maybe_unused]] = char;
 
             constexpr explicit operator fmt::basic_string_view<char>() const noexcept {
                 return StringConstant<formatChars...>::stringView;
@@ -251,7 +260,7 @@ namespace detail {
              char... formatChars>
     consteval auto format(StringConstant<formatChars...>) {
         struct FormatStr : fmt::compiled_string {
-            using char_type = char;
+            using char_type [[maybe_unused]] = char;
 
             constexpr explicit operator fmt::basic_string_view<char>() const noexcept {
                 return StringConstant<formatChars...>::stringView;
