@@ -205,7 +205,11 @@ consteval auto escape(StringConstant<chars...>,
                       ShouldEscape,
                       EscapeWith) {
     constexpr auto Generator = []() {
-        std::string string{StringConstant<chars...>::stringView};
+        // Not from stringView: that picks libstdc++'s (char const*, size) constructor, whose null
+        // check gcc cannot fold under -fno-delete-null-pointer-checks (implied by
+        // -fsanitize=undefined), which fails the whole consteval evaluation.
+        std::string string{StringConstant<chars...>::storage.begin(),
+                           StringConstant<chars...>::storage.end()};
 
         auto pos = string.begin();
         while(pos != string.end()) {

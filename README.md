@@ -57,3 +57,14 @@ int main(){
 ```
 
 For the usage with compile-time format and the usage with `std::string_view` see the other [examples](examples).
+
+## Tests
+
+```sh
+cmake -S tests -B build && cmake --build build && cd build && ctest --output-on-failure
+```
+
+Two suites: `test_string_constant` builds without fmt, so it also checks that everything outside
+the `__has_include(<fmt/format.h>)` block stands on its own; `test_fmt` covers the formatter, the
+consteval `format()` helpers and `SC_FORMAT`. Most of the library is `consteval`, so most of the
+suite is `static_assert`s - a failure shows up as a build error rather than a failing test.
