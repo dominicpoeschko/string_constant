@@ -48,6 +48,17 @@
     #endif
 #endif
 
+// Tells clang that a returned reference or a constructed object refers to this argument, so its lifetime analysis
+// can see a dangling use. Nothing on other compilers.
+#if defined(__has_cpp_attribute)
+    #if __has_cpp_attribute(clang::lifetimebound)
+        #define SC_LIFETIMEBOUND [[clang::lifetimebound]]
+    #endif
+#endif
+#ifndef SC_LIFETIMEBOUND
+    #define SC_LIFETIMEBOUND
+#endif
+
 namespace sc {
 template<char... chars>
 struct StringConstant {
@@ -137,7 +148,7 @@ consteval auto create(StringGenerator) {
 
 template<typename Stream,
          char... chars>
-constexpr Stream& operator<<(Stream& outputStream,
+constexpr Stream& operator<<(Stream& outputStream SC_LIFETIMEBOUND,
                              StringConstant<chars...> const&) {
     outputStream << StringConstant<chars...>::stringView;
     return outputStream;
