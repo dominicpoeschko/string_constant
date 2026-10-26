@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(string_constant_examples VERSION 0.1.0)
