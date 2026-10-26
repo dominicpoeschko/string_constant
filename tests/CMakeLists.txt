@@ -24,10 +24,10 @@ find_or_fetch_package(
 
 include(${cmake_helpers_SOURCE_DIR}/BuildOptions.cmake)
 
-# string_constant.hpp sets these before it includes fmt, so a fmt compiled without them defines locale_ref and context
-# differently than the test sees them - gcc reports it as an ODR violation at LTO link time. Building fmt with the same
-# values keeps it to one definition. PUBLIC so the macros are already set when a consumer reaches the #ifndef in the
-# header.
+# string_constant/format.hpp sets these before it includes fmt, so a fmt compiled without them defines locale_ref and
+# context differently than the test sees them - gcc reports it as an ODR violation at LTO link time. Building fmt with
+# the same values keeps it to one definition. PUBLIC so the macros are already set when a consumer reaches the #ifndef
+# in the header.
 if(TARGET fmt)
     target_compile_definitions(fmt PUBLIC FMT_USE_LOCALE=0 FMT_UNICODE=0)
 endif()
@@ -58,8 +58,8 @@ function(string_constant_add_test name)
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
 
-# fmt is deliberately not linked here: the header switches on __has_include(<fmt/format.h>), so this target is also the
-# check that everything outside that block builds with no fmt in sight.
+# fmt is deliberately not linked here: string_constant.hpp includes no fmt, and the test's `#ifdef FMT_VERSION` #error
+# checks it even where a system fmt is on the include path.
 string_constant_add_test(test_string_constant string_constant_tests.cpp)
 
 string_constant_add_test(test_fmt fmt_tests.cpp)

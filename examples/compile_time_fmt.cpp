@@ -1,3 +1,4 @@
+#include "string_constant/format.hpp"
 #include "string_constant/string_constant.hpp"
 
 #include <fmt/format.h>

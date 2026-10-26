@@ -1,10 +1,15 @@
-// Tests for everything that does not need fmt - the header is usable without it, so this
-// translation unit deliberately never sees <fmt/format.h> (see tests/CMakeLists.txt).
+// Tests for everything that does not need fmt - string_constant.hpp includes only the standard
+// library, and this translation unit checks it: fmt on the include path (a system fmt) must not
+// be reached.
 //
 // Most of the library is consteval, so most of the suite is static_asserts: they fail the build
 // rather than the run. The main() checks cover what only exists at run time (streaming, comparing
 // against a value the compiler does not know).
 #include "string_constant/string_constant.hpp"
+
+#ifdef FMT_VERSION
+    #error "string_constant.hpp must not include fmt"
+#endif
 
 #include <compare>
 #include <cstdio>

@@ -31,14 +31,14 @@ jobs:
             - name: Set up C++ environment
               run: |
                 pacman -Syu --noconfirm
-                pacman -S --noconfirm git cmake base-devel ${{ matrix.compiler.cc == 'clang' && 'clang' || '' }} ${{ matrix.compiler.stdlib == 'libc++' && 'libc++ lld' || '' }}
+                pacman -S --noconfirm git cmake base-devel python ${{ matrix.compiler.cc == 'clang' && 'clang' || '' }} ${{ matrix.compiler.stdlib == 'libc++' && 'libc++ lld' || '' }}
 
             - name: Checkout repository
               uses: actions/checkout@v5
 
             - name: Configure CMake
               run: >
-                cmake -S tests -B build
+                cmake -S tests -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
                 -DUSE_FORCE_FETCH=ON
                 -DUSE_WARNINGS_AS_ERRORS=ON
                 ${{ matrix.compiler.sanitizer && format('-DUSE_SANITIZER={0}', matrix.compiler.sanitizer) || '' }}
@@ -53,3 +53,12 @@ jobs:
 
             - name: Run tests
               run: cd build && ctest --output-on-failure
+
+            # clang-tidy (Kvasir_SDK master's tools/tidy.py and .clang-tidy, .github/actions/tidy) over this tree:
+            # this repository's findings fail, the libraries' are counted as foreign
+            - name: clang-tidy
+              if: matrix.compiler.cc == 'clang' && !matrix.compiler.sanitizer
+              uses: kvasir-io/Kvasir_SDK/.github/actions/tidy@master
+              timeout-minutes: 30
+              with:
+                trees: build

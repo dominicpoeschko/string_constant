@@ -1,13 +1,14 @@
-// Tests for the parts the header only defines when fmt is available: the fmt::formatter for
-// StringConstant, the consteval format() helpers, ArgHolder, and SC_FORMAT.
+// Tests for the fmt half, string_constant/format.hpp: the fmt::formatter for StringConstant, the
+// consteval format() helpers, ArgHolder, and SC_FORMAT.
 //
-// fmt is pulled in by string_constant.hpp itself (it includes it behind __has_include, wrapped in
-// the warning pragmas), so this file does not include it directly.
-#include "string_constant/string_constant.hpp"
+// fmt is pulled in by format.hpp itself (wrapped in the warning pragmas), so this file does not
+// include it directly.
+#include "string_constant/format.hpp"
 
 #include <cstdint>
 #include <cstdio>
 #include <string>
+#include <string_view>
 #include <tuple>
 
 using namespace sc::literals;
@@ -31,7 +32,7 @@ int failures = 0;
     } while(0)
 
 // consteval formatting: the format string and the arguments are both compile time, the result is a
-// StringConstant again. This is what uc_log builds its log headers from.
+// StringConstant again.
 static_assert(sc::detail::format<42,
                                  7>("{}-{}"_sc)
               == "42-7"_sc);
@@ -53,21 +54,25 @@ static_assert(SC_FORMAT("{}",
               == "0.5"_sc);
 static_assert(SC_FORMAT("no args") == "no args"_sc);
 
+// the text is exactly as long as fmt makes it, past any small buffer too (it was a 1 MiB array per string)
+static_assert(std::string_view{sc::detail::format<7>("{:x>5000}|"_sc)}.size() == 5001);
+static_assert(std::string_view{sc::detail::format<7>("{:x>5000}|"_sc)}.substr(4997) == "xx7|");
+
 }   // namespace
 
 int main() {
     // formatter<StringConstant>: a StringConstant is formattable like a string, specs included
     CHECK_EQ(fmt::format("{}", "abc"_sc), "abc", "format StringConstant");
-    CHECK_EQ(fmt::format("{}", ""_sc), "", "format empty StringConstant");
+    CHECK_EQ(fmt::format("{}", ""_sc), std::string{}, "format empty StringConstant");
     CHECK_EQ(fmt::format("[{:>5}]", "ab"_sc), "[   ab]", "format with spec");
     CHECK_EQ(fmt::format("{}-{}", "a"_sc, "b"_sc), "a-b", "format several");
 
     // ArgHolder defers to the formatter of whatever the generator returns
-    CHECK_EQ(fmt::format("{}", sc::make_arg([]() { return 42; })), "42", "ArgHolder int");
-    CHECK_EQ(fmt::format("[{:>4}]", sc::make_arg([]() { return 42; })),
+    CHECK_EQ(fmt::format("{}", sc::makeArg([]() { return 42; })), "42", "ArgHolder int");
+    CHECK_EQ(fmt::format("[{:>4}]", sc::makeArg([]() { return 42; })),
              "[  42]",
              "ArgHolder with spec");
-    CHECK_EQ(fmt::format("{}", sc::make_arg([]() { return std::string_view{"str"}; })),
+    CHECK_EQ(fmt::format("{}", sc::makeArg([]() { return std::string_view{"str"}; })),
              "str",
              "ArgHolder string_view");
 

@@ -35,6 +35,7 @@ make
 The most basic usage can be found in [examples/basic_usage.cpp](examples/basic_usage.cpp), which covers basic string manipulation as well as printing through `std::cout` and `fmt::print`.
 
 ```c++
+#include "string_constant/format.hpp"
 #include "string_constant/string_constant.hpp"
 #include <fmt/format.h>
 #include <iostream>
@@ -58,13 +59,20 @@ int main(){
 
 For the usage with compile-time format and the usage with `std::string_view` see the other [examples](examples).
 
+### fmt support
+
+`string_constant/string_constant.hpp` includes only the standard library. Everything that needs fmt is in
+`string_constant/format.hpp`: `fmt::formatter<sc::StringConstant>` (so `fmt::print("{}", "x"_sc)` works), the
+compile-time formatting `SC_FORMAT("value {}", 32)` and `sc::make_arg`. Include it where a `StringConstant` is formatted
+with fmt; without it that is a compile error (no formatter), never a silent change.
+
 ## Tests
 
 ```sh
 cmake -S tests -B build && cmake --build build && cd build && ctest --output-on-failure
 ```
 
-Two suites: `test_string_constant` builds without fmt, so it also checks that everything outside
-the `__has_include(<fmt/format.h>)` block stands on its own; `test_fmt` covers the formatter, the
+Two suites: `test_string_constant` builds without fmt and fails to compile if `string_constant.hpp`
+reaches fmt (also with a system fmt installed); `test_fmt` covers `format.hpp`: the formatter, the
 consteval `format()` helpers and `SC_FORMAT`. Most of the library is `consteval`, so most of the
 suite is `static_assert`s - a failure shows up as a build error rather than a failing test.
