@@ -1,6 +1,6 @@
 #pragma once
 // The fmt half of string_constant: fmt::formatter<sc::StringConstant>, consteval formatting
-// (sc::detail::format, SC_FORMAT) and ArgHolder/make_arg. string_constant.hpp itself needs no fmt.
+// (sc::Detail::format, SC_FORMAT) and ArgHolder/make_arg. string_constant.hpp itself needs no fmt.
 #include "string_constant.hpp"
 
 #include <string>
@@ -59,7 +59,7 @@ struct fmt::formatter<sc::StringConstant<Chars...>> : formatter<string_view> {
 };
 
 namespace sc {
-namespace detail {
+namespace Detail {
     // a StringConstant as fmt's compiled format string (fmt/compile.h): parsed at compile time, usable in a constant
     // expression
     template<char... FormatChars>
@@ -95,7 +95,7 @@ namespace detail {
     consteval auto format(StringConstant<FormatChars...> fmt) {
         return format<decltype([]() { return std::tuple{Args...}; })>(fmt);
     }
-}   // namespace detail
+}   // namespace Detail
 
 template<typename ArgGenerator>
 struct ArgHolder {};
@@ -117,4 +117,4 @@ struct fmt::formatter<sc::ArgHolder<ArgGenerator>> : formatter<decltype(ArgGener
 };
 
 #define SC_FORMAT(fmt, ...)                                                                     \
-    ::sc::detail::format<decltype([]() { return std::make_tuple(__VA_ARGS__); })>(SC_LIFT(fmt))
+    ::sc::Detail::format<decltype([]() { return std::make_tuple(__VA_ARGS__); })>(SC_LIFT(fmt))

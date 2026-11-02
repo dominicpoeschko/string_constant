@@ -44,7 +44,7 @@ namespace literals {
 #endif
 }   // namespace literals
 
-namespace detail {
+namespace Detail {
     template<typename StringViewGenerator,
              std::size_t... Indices>
         requires(std::convertible_to<std::remove_cvref_t<decltype(StringViewGenerator{}())>,
@@ -61,7 +61,7 @@ namespace detail {
         return StringConstant<generator()[Indices]...>{};
     }
 
-}   // namespace detail
+}   // namespace Detail
 
 template<typename StringViewLikeGenerator>
     requires(std::convertible_to<std::remove_cvref_t<decltype(StringViewLikeGenerator{}())>,
@@ -69,12 +69,12 @@ template<typename StringViewLikeGenerator>
              && !std::same_as<std::remove_cvref_t<decltype(StringViewLikeGenerator{}())>,
                               std::string>)
 consteval auto create(StringViewLikeGenerator)
-  -> decltype(detail::unpackInto<StringViewLikeGenerator>(
+  -> decltype(Detail::unpackInto<StringViewLikeGenerator>(
     std::make_index_sequence<StringViewLikeGenerator{}().size()>{})) {
     return {};
 }
 
-namespace detail {
+namespace Detail {
     template<typename StringGenerator>
         requires(std::same_as<std::remove_cvref_t<decltype(StringGenerator{}())>, std::string>)
     struct FromStringGenerator {
@@ -91,13 +91,13 @@ namespace detail {
             return create([]() { return std::string_view{storage.begin(), storage.end()}; });
         }
     };
-}   // namespace detail
+}   // namespace Detail
 
 template<typename StringGenerator>
     requires(std::same_as<std::remove_cvref_t<decltype(StringGenerator{}())>,
                           std::string>)
 consteval auto create(StringGenerator) {
-    return detail::FromStringGenerator<StringGenerator>::sc();
+    return Detail::FromStringGenerator<StringGenerator>::sc();
 }
 
 template<typename Stream,
@@ -194,5 +194,5 @@ consteval auto escape(StringConstant<Chars...>,
 }   // namespace sc
 
 #define SC_LIFT(arg) ::sc::create([]() { return std::string_view{arg}; })
-// The fmt formatter, consteval formatting (sc::detail::format) and SC_FORMAT are in
+// The fmt formatter, consteval formatting (sc::Detail::format) and SC_FORMAT are in
 // string_constant/format.hpp.
