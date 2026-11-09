@@ -18,7 +18,7 @@ find_or_fetch_package(
     GIT_REPOSITORY
     https://github.com/fmtlib/fmt
     GIT_TAG
-    12.2.0
+    12.2.1
     GIT_BRANCH
     master)
 

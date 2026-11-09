@@ -18,12 +18,16 @@ jobs:
             fail-fast: false
             matrix:
                 # stdlib_debug and libc++ work because tests/CMakeLists.txt propagates the stdlib
-                # and debug-ABI flags to the fetched fmt as well
+                # and debug-ABI flags to the fetched fmt as well.
+                # ship: cmake_helpers' Release as a host tool ships (NDEBUG, LTO, a gcc LTO link failing on the
+                # optimizer's late warnings). Every other entry is Release with its asserts and without LTO: faster,
+                # and gcc's warnings come at compile time. No stdlib_debug under gcc's TSan: its checked iterators
+                # take a global mutex that TSan instruments.
                 compiler:
-                    - {cc: gcc, cxx: g++}
+                    - {cc: gcc, cxx: g++, ship: true}
                     - {cc: gcc, cxx: g++, stdlib_debug: true, sanitizer: address}
-                    - {cc: gcc, cxx: g++, stdlib_debug: true, sanitizer: thread}
-                    - {cc: clang, cxx: clang++}
+                    - {cc: gcc, cxx: g++, sanitizer: thread}
+                    - {cc: clang, cxx: clang++, ship: true}
                     - {cc: clang, cxx: clang++, stdlib: libc++, stdlib_debug: true, sanitizer: address}
                     - {cc: clang, cxx: clang++, stdlib: libc++, stdlib_debug: true, sanitizer: thread}
 
@@ -34,13 +38,16 @@ jobs:
                 pacman -S --noconfirm git cmake base-devel python ${{ matrix.compiler.cc == 'clang' && 'clang' || '' }} ${{ matrix.compiler.stdlib == 'libc++' && 'libc++ lld' || '' }}
 
             - name: Checkout repository
-              uses: actions/checkout@v5
+              uses: actions/checkout@v7
 
             - name: Configure CMake
               run: >
                 cmake -S tests -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
                 -DUSE_FORCE_FETCH=ON
                 -DUSE_WARNINGS_AS_ERRORS=ON
+                -DCMAKE_BUILD_TYPE=Release
+                -DUSE_NATIVE_FLAG=OFF
+                ${{ !matrix.compiler.ship && '-DUSE_NDEBUG=OFF -DUSE_LTO=OFF -DCMAKE_CXX_FLAGS_RELEASE=-O3' || '' }}
                 ${{ matrix.compiler.sanitizer && format('-DUSE_SANITIZER={0}', matrix.compiler.sanitizer) || '' }}
                 ${{ matrix.compiler.stdlib && format('-DUSE_STD_LIB={0}', matrix.compiler.stdlib) || '' }}
                 ${{ matrix.compiler.stdlib_debug && '-DUSE_STDLIB_DEBUG=true' || '' }}
@@ -52,7 +59,7 @@ jobs:
               run: cmake --build build -j"$(nproc)"
 
             - name: Run tests
-              run: cd build && ctest --output-on-failure
+              run: cd build && ctest --output-on-failure -j"$(nproc)"
 
             # clang-tidy (Kvasir_SDK master's tools/tidy.py and .clang-tidy, .github/actions/tidy) over this tree:
             # this repository's findings fail, the libraries' are counted as foreign
